@@ -14,15 +14,15 @@ struct dataSubscribers
 {
 	string Surname, Name, Otchestvo;
 	string PhoneNumber;
-	int dayReg{0}, monthReg{0}, yearReg{0};
-	int TariffPlan{0};
+	int dayReg{}, monthReg{}, yearReg{};
+	int TariffPlan{};
 };
 
 struct tariffs
 {
 	string nameTariffPlan;
-	int costTariffPlan;
-	int codeTariffPlan;
+	int costTariffPlan{};
+	int codeTariffPlan{};
 };
 
 void inclear()
@@ -490,22 +490,247 @@ void addTariff()
 	}
 }
 
+void subcalculation()
+{
+	ifstream subscribers("subscribers.txt");
+	if (!subscribers.is_open())
+	{
+		cout << "Ошибка при открытии файла с аккаунтами пользователей\n";
+		return;
+	}
+	int countSubscribers;
+	subscribers >> countSubscribers;
+	dataSubscribers* sub = new dataSubscribers[countSubscribers];
+	int i;
+	for (i = 0; i < countSubscribers; i++)
+	{
+		subscribers >> sub[i].Surname >> sub[i].Name >> sub[i].Otchestvo;
+		subscribers >> sub[i].PhoneNumber;
+		subscribers >> sub[i].dayReg >> sub[i].monthReg >> sub[i].yearReg;
+		subscribers >> sub[i].TariffPlan;
+	}
+	subscribers.close();
+	
+	ifstream tariffplan("tariffplans.txt");
+	if (!tariffplan.is_open())
+	{
+		cout << "Ошибка при открытии файла с тарифами сотового оператора\n";
+		return;
+	}
+	int countTariffs;
+	string str;
+	tariffplan >> countTariffs;
+	tariffs* Tariff = new tariffs[countTariffs];
+	for (i = 0; i < countTariffs; i++)
+	{
+		getline(tariffplan, str);
+		getline(tariffplan, str);
+		getline(tariffplan, str);
+		Tariff[i].nameTariffPlan = str;
+		tariffplan >> Tariff[i].costTariffPlan;
+		tariffplan >> Tariff[i].codeTariffPlan;
+	}
+	tariffplan.close();
+
+	int userTariff = 0;
+	int userMonth = 0, userYear = 0;
+	int tariffCost = 0;
+	while (1)
+	{
+		cout << "Введите телефонный номер абонента: ";
+		getline(cin, str);
+		if (str == "-")
+		{
+			delete[] sub;
+			delete[] Tariff;
+			return;
+		}
+		for (i = 0; i < countSubscribers; i++)
+			if (str == sub[i].PhoneNumber)
+			{
+				userTariff = sub[i].TariffPlan;
+				userMonth = sub[i].monthReg;
+				userYear = sub[i].yearReg;
+				break;
+			}
+		if (userTariff == 0)
+		{
+			cout << "Введённого номера телефона не существует. Повторите попытку или введите \"-\" для отмены подсчёта прибыли.\n";
+			continue;
+		}
+		for (i=0; i<countTariffs; i++)
+			if (userTariff == Tariff[i].codeTariffPlan)
+			{
+				tariffCost = Tariff[i].costTariffPlan;
+				break;
+			}
+		if (userYear > 23) userYear = 99 - userYear + 22;
+		else userYear = 22 - userYear;
+		cout << "Общая прибыль с номера телефона " << str << " составляет " << ((userYear * 12 + (12 - userMonth) + 5) * tariffCost) << " рублей.\n";
+		delete[] sub;
+		delete[] Tariff;
+		break;
+	}
+	return;
+}
+
+void tariffcalculation()
+{
+	ifstream subscribers("subscribers.txt");
+	if (!subscribers.is_open())
+	{
+		cout << "Ошибка при открытии файла с аккаунтами пользователей\n";
+		return;
+	}
+	int countSubscribers;
+	subscribers >> countSubscribers;
+	dataSubscribers* sub = new dataSubscribers[countSubscribers];
+	int i;
+	for (i = 0; i < countSubscribers; i++)
+	{
+		subscribers >> sub[i].Surname >> sub[i].Name >> sub[i].Otchestvo;
+		subscribers >> sub[i].PhoneNumber;
+		subscribers >> sub[i].dayReg >> sub[i].monthReg >> sub[i].yearReg;
+		subscribers >> sub[i].TariffPlan;
+	}
+	subscribers.close();
+
+	ifstream tariffplan("tariffplans.txt");
+	if (!tariffplan.is_open())
+	{
+		cout << "Ошибка при открытии файла с тарифами сотового оператора\n";
+		return;
+	}
+	int countTariffs;
+	string str;
+	tariffplan >> countTariffs;
+	tariffs* Tariff = new tariffs[countTariffs];
+	for (i = 0; i < countTariffs; i++)
+	{
+		getline(tariffplan, str);
+		getline(tariffplan, str);
+		getline(tariffplan, str);
+		Tariff[i].nameTariffPlan = str;
+		tariffplan >> Tariff[i].costTariffPlan;
+		tariffplan >> Tariff[i].codeTariffPlan;
+	}
+	tariffplan.close();
+	int tariffCost = 0;
+	int income = 0;
+	while (1)
+	{
+		cout << "Введите код тарифного плана: ";
+		int code;
+		if (!scanf_s("%d", &code))
+		{
+			char buf;
+			scanf_s("%c", &buf, 1);
+			if (buf == '-')
+			{
+				inclear();
+				delete[] sub;
+				delete[] Tariff;
+				return;
+			}
+			inclear();
+			cout << "Некорректный ввод. Код тарифного плана является числом.\n";
+			continue;
+		}
+		for (i = 0; i < countTariffs; i++)
+		{
+			if (code == Tariff[i].codeTariffPlan)
+			{
+				tariffCost = Tariff[i].costTariffPlan;
+				cout << "Общая прибыль с тарифного плана \"" << Tariff[i].nameTariffPlan << "\" составляет ";
+				i = -1;
+				break;
+			}
+		}
+		if (i != -1)
+		{
+			cout << "Введённый код тарифного плана не соответствует ни одному из имеющихся, повторите попытку или введите \"-\" для отмены подсчёта прибыли.\n";
+			continue;
+		}
+		for (i = 0; i < countSubscribers; i++)
+			if (sub[i].TariffPlan == code)
+			{
+				if (sub[i].yearReg > 23) sub[i].yearReg = 99 - sub[i].yearReg + 22;
+				else sub[i].yearReg = 22 - sub[i].yearReg;
+				income+=(sub[i].yearReg * 12 + (12 - sub[i].monthReg) + 5) * tariffCost;
+			}
+		cout << income << " рублей.\n"; 
+		delete[] sub;
+		delete[] Tariff;
+		return;
+	}
+}
+
+void subinfo()
+{
+	ifstream subscribers("subscribers.txt");
+	if (!subscribers.is_open())
+	{
+		cout << "Ошибка при открытии файла с аккаунтами пользователей\n";
+		return;
+	}
+	int countSubscribers;
+	char temp;
+	subscribers >> countSubscribers;
+	dataSubscribers* sub = new dataSubscribers[countSubscribers + 1];
+	int i;
+	for (i = 0; i < countSubscribers; i++)
+	{
+		subscribers >> sub[i].Surname >> sub[i].Name >> sub[i].Otchestvo;
+		subscribers >> sub[i].PhoneNumber;
+		subscribers >> sub[i].dayReg >> sub[i].monthReg >> sub[i].yearReg;
+		subscribers >> sub[i].TariffPlan;
+	}
+	subscribers.close();
+	for (i = 0; i < countSubscribers; i++)
+	{
+		cout << sub[i].Surname << " " << sub[i].Name << " " << sub[i].Otchestvo << " ";
+		cout << sub[i].PhoneNumber << " ";
+		cout << sub[i].dayReg << "." << sub[i].monthReg << "." << sub[i].yearReg << " ";
+		cout << sub[i].TariffPlan << "\n";
+	}
+	delete[] sub;
+	return;
+}
+
 void userMenu()
 {
 	while (1)
 	{
-		cout << "Выберите действие: рассчитать прибыль (1), получить список абонентов (2), редактировать базу абонентов (3), выйти из системы (0)\n";
+		cout << "Выберите действие:\nРассчитать прибыль - 1\nПолучить список абонентов - 2\nРедактировать базу абонентов - 3\nВыйти из системы - 0\n";
 		int choice;
 		scanf_s("%d", &choice);
 		switch (choice)
 		{
-		case 1:
+		case 1: //Рассчёт дохода
 			inclear();
-			//
+			cout << "Рассчитать доход с абонента - 1\nРассчитать доход с тарифа - 2\nОтменить рассчёт - 0\n";
+			scanf_s("%d", &choice);
+			switch (choice)
+			{
+			case 1:
+				inclear();
+				subcalculation();
+				break;
+			case 2:
+				inclear();
+				tariffcalculation();
+				break;
+			case 0:
+				break;
+			default:
+				printf("Некорректный ввод!\n");
+				inclear();
+				break;
+			}
 			break;
 		case 2:
 			inclear();
-			//
+			subinfo();
 			break;
 		case 3:
 			inclear();
